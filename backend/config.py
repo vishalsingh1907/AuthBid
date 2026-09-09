@@ -9,7 +9,7 @@ import os
 
 class Settings(BaseSettings):
     # ── App ──
-    APP_NAME: str = "BidVerify — GeM Compliance Intelligence"
+    APP_NAME: str = "AuthBid — GeM Compliance Intelligence"
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = True
 

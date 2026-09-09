@@ -1,5 +1,5 @@
 """
-SIH26100 — BidVerify API
+SIH26100 — AuthBid API
 AI-Powered Integrated Bid Compliance Verification Platform for GeM Procurement
 
 Main FastAPI application entry point.

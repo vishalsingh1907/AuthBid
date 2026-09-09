@@ -489,7 +489,7 @@ export default function DashboardPage() {
             <div>
               <div className="flex items-center gap-1.5">
                 <h1 className="text-lg font-black tracking-tight text-slate-900 leading-none">
-                  BidVerify
+                  AuthBid
                 </h1>
                 <span className="text-[10px] font-bold uppercase tracking-wider bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded">
                   GeM AI

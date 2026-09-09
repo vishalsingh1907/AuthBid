@@ -1,4 +1,4 @@
-# 🛡️ BidVerify — GeM Compliance Intelligence
+# 🛡️ AuthBid — GeM Compliance Intelligence
 ## AI-Powered Integrated Bid Compliance Verification & Collusion Detection Platform
 **Project ID:** SIH26100 | Smart India Hackathon  
 **Target Domain:** Public Procurement & Bid Scrutiny on Government e-Marketplace (GeM)
@@ -7,7 +7,7 @@
 
 ## 📌 Executive Summary
 
-**BidVerify** is an end-to-end intelligent compliance verification system designed for procurement officers scrutinizing tenders on the Government e-Marketplace (GeM). It replaces time-consuming, error-prone manual document verification with an automated multi-agent AI pipeline, detects organized bid-rigging and cartel formation via graph neural entity resolution, and maintains an immutable, cryptographically verifiable SHA-256 hash-chained audit trail.
+**AuthBid** is an end-to-end intelligent compliance verification system designed for procurement officers scrutinizing tenders on the Government e-Marketplace (GeM). It replaces time-consuming, error-prone manual document verification with an automated multi-agent AI pipeline, detects organized bid-rigging and cartel formation via graph neural entity resolution, and maintains an immutable, cryptographically verifiable SHA-256 hash-chained audit trail.
 
 ---
 
@@ -58,7 +58,7 @@ Instead of procurement committees spending days manually examining certificates,
 ---
 
 ### 2. 🕸️ Interactive Collusion & Knowledge Graph (`/graph`)
-Cartels and shell companies frequently submit artificial "cover bids" to simulate competition. BidVerify uncovers these syndicates using an interactive 2D Force-Directed Graph:
+Cartels and shell companies frequently submit artificial "cover bids" to simulate competition. AuthBid uncovers these syndicates using an interactive 2D Force-Directed Graph:
 * **Entity Resolution**:
   * **Shared Directors / DINs**: Connects distinct bidder companies that share board members or authorized signatories.
   * **Shared Registered Addresses**: Maps multiple bidding companies operating out of the same physical building, suite, or pincode.

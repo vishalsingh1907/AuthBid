@@ -1,4 +1,4 @@
-# 🛡️ BidVerify — GeM Compliance Intelligence
+# 🛡️ AuthBid — GeM Compliance Intelligence
 
 > **AI-Powered Integrated Bid Compliance Verification & Collusion Detection Platform for GeM Procurement**  
 > *Smart India Hackathon (SIH26100)*
