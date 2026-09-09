@@ -2,14 +2,8 @@
 
 import React, { useState } from "react";
 import {
-  TrendingUp,
   AlertTriangle,
-  CheckCircle2,
-  XCircle,
-  HelpCircle,
-  BarChart3,
   Scale,
-  Award,
   ShieldAlert
 } from "lucide-react";
 
@@ -103,7 +97,7 @@ export default function CommercialPriceAnalysis({
             Price Clustering & Cover Bidding Pattern Observed
           </h5>
           <p className="text-amber-800 mt-0.5 leading-relaxed">
-            Entity <strong>Quantum Digital (B007)</strong> submitted an artificially depressed quote (₹2.20 Cr) to set the floor, while syndicate partners <strong>TechVision (B001, ₹2.35 Cr)</strong> and <strong>DigiCore (B003, ₹2.48 Cr)</strong> bracketed the benchmark. When B007's shell status is disqualified, TechVision is positioned to claim L1 unless the entire cartel is disqualified.
+            Entity <strong>Quantum Digital (B007)</strong> submitted an artificially depressed quote (₹2.20 Cr) to set the floor, while syndicate partners <strong>TechVision (B001, ₹2.35 Cr)</strong> and <strong>DigiCore (B003, ₹2.48 Cr)</strong> bracketed the benchmark. When B007&apos;s shell status is disqualified, TechVision is positioned to claim L1 unless the entire cartel is disqualified.
           </p>
         </div>
       </div>

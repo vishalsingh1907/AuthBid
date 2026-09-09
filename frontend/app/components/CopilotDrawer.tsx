@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Bot,
   X,
@@ -15,12 +15,15 @@ import {
   Loader2
 } from "lucide-react";
 
+import { api } from "../lib/api";
+
 interface CopilotResponseData {
   title: string;
   summary: string;
   evidence: string[];
   legal_statute: string;
   recommendation: string;
+  disclaimer?: string;
 }
 
 interface Message {
@@ -66,6 +69,9 @@ export default function CopilotDrawer({
 
   const [inputQuery, setInputQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  const storageKey = `authbid_copilot_${tenderId}_${selectedBidderId || "all"}`;
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "msg-welcome",
@@ -74,6 +80,43 @@ export default function CopilotDrawer({
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     },
   ]);
+
+  // Load chat history from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setMessages(parsed);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, [storageKey]);
+
+  // Save chat history to localStorage
+  const saveMessages = (newMsgs: Message[]) => {
+    setMessages(newMsgs);
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(newMsgs));
+    } catch {
+      // ignore
+    }
+  };
+
+  const clearChatHistory = () => {
+    const defaultMsg: Message[] = [
+      {
+        id: "msg-welcome",
+        sender: "copilot",
+        text: "Namaste Evaluation Officer. I am the GeM Vigilance & Legal AI Copilot. Ask me about cartel forensics, shell company indicators, L1 compliance standing, or statutory citations under GFR 2017 & Competition Act 2002.",
+        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      },
+    ];
+    saveMessages(defaultMsg);
+  };
 
   const handleSend = async (queryText?: string) => {
     const textToSend = (queryText || inputQuery).trim();
@@ -86,54 +129,39 @@ export default function CopilotDrawer({
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    const updatedWithUser = [...messages, userMessage];
+    saveMessages(updatedWithUser);
     setInputQuery("");
     setIsLoading(true);
 
     try {
-      const res = await fetch("http://localhost:8000/api/verification/copilot", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query: textToSend,
-          tender_id: tenderId,
-          bidder_id: selectedBidderId,
-        }),
-      });
-
-      const json = await res.json();
+      const json = await api.queryCopilot(textToSend, tenderId, selectedBidderId);
       if (json.success && json.data) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: `cop-${Date.now()}`,
-            sender: "copilot",
-            data: json.data,
-            timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          },
-        ]);
-      } else {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: `cop-${Date.now()}`,
-            sender: "copilot",
-            text: "No conclusive evidence found for this query in the current tender dataset.",
-            timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          },
-        ]);
-      }
-    } catch (err) {
-      console.error("Copilot fetch error:", err);
-      setMessages((prev) => [
-        ...prev,
-        {
+        const copilotMsg: Message = {
           id: `cop-${Date.now()}`,
           sender: "copilot",
-          text: "Vigilance intelligence endpoint unreachable. Please verify server connectivity.",
+          data: json.data,
           timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        },
-      ]);
+        };
+        saveMessages([...updatedWithUser, copilotMsg]);
+      } else {
+        const fallbackMsg: Message = {
+          id: `cop-${Date.now()}`,
+          sender: "copilot",
+          text: "No conclusive evidence found for this query in the current tender dataset.",
+          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        };
+        saveMessages([...updatedWithUser, fallbackMsg]);
+      }
+    } catch (err: unknown) {
+      console.error("Copilot query error:", err);
+      const errorMsg: Message = {
+        id: `cop-${Date.now()}`,
+        sender: "copilot",
+        text: "Vigilance intelligence endpoint unreachable or error encountered. Please check connectivity.",
+        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      };
+      saveMessages([...updatedWithUser, errorMsg]);
     } finally {
       setIsLoading(false);
     }
@@ -177,12 +205,21 @@ export default function CopilotDrawer({
                 </p>
               </div>
             </div>
-            <button
-              onClick={handleClose}
-              className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-300 hover:text-white transition"
-            >
-              <X size={16} />
-            </button>
+            <div className="flex items-center gap-1">
+                <button
+                  onClick={clearChatHistory}
+                  className="text-xs text-slate-400 hover:text-slate-200 px-2 py-1 rounded hover:bg-slate-800 transition"
+                  title="Clear chat history"
+                >
+                  Clear
+                </button>
+                <button
+                  onClick={handleClose}
+                  className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
+                >
+                  <X size={18} />
+                </button>
+            </div>
           </div>
 
           {/* Preset Chips */}
@@ -212,6 +249,13 @@ export default function CopilotDrawer({
                       : "bg-white text-slate-800 border border-slate-200 rounded-bl-none shadow-xs"
                   }`}
                 >
+                  {m.sender === "copilot" && (
+                    <div className="flex items-center gap-1.5 px-2 py-1 bg-amber-50 border border-amber-200 rounded-md text-[10px] font-bold text-amber-800 mb-2.5">
+                      <Sparkles size={11} className="text-amber-600 flex-shrink-0" />
+                      <span>AI-Generated Intelligence — Verify independently against statutory records</span>
+                    </div>
+                  )}
+
                   {m.text && <p className="font-medium whitespace-pre-wrap">{m.text}</p>}
 
                   {m.data && (

@@ -1,16 +1,35 @@
 /** API configuration */
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-export async function fetchAPI(endpoint: string, options?: RequestInit) {
+let currentActiveRole: string = "officer";
+
+export function setActiveRole(role: string) {
+  currentActiveRole = role;
+}
+
+export function getActiveRole(): string {
+  return currentActiveRole;
+}
+
+export async function fetchAPI(endpoint: string, options?: RequestInit, role?: string) {
+  const effectiveRole = role || currentActiveRole;
   const res = await fetch(`${API_BASE}${endpoint}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
+      "X-User-Role": effectiveRole,
       ...options?.headers,
     },
   });
   if (!res.ok) {
-    throw new Error(`API Error: ${res.status} ${res.statusText}`);
+    let errorDetail = `${res.status} ${res.statusText}`;
+    try {
+      const errJson = await res.json();
+      if (errJson.detail) errorDetail = errJson.detail;
+    } catch {
+      // ignore
+    }
+    throw new Error(errorDetail);
   }
   return res.json();
 }
@@ -33,13 +52,41 @@ export const api = {
   getResults: (tenderId: string) =>
     fetchAPI(`/api/verification/results/${tenderId}`),
   getAuditTrail: () => fetchAPI("/api/verification/audit-trail"),
-  tamperAuditTrail: (stepId?: string) =>
-    fetchAPI("/api/verification/tamper", {
-      method: "POST",
-      body: JSON.stringify({ step_id: stepId }),
-    }),
-  restoreAuditTrail: () =>
-    fetchAPI("/api/verification/restore", { method: "POST" }),
+  tamperAuditTrail: (stepId?: string, role = "admin") =>
+    fetchAPI(
+      "/api/verification/tamper",
+      {
+        method: "POST",
+        body: JSON.stringify({ step_id: stepId }),
+      },
+      role
+    ),
+  restoreAuditTrail: (role = "admin") =>
+    fetchAPI("/api/verification/restore", { method: "POST" }, role),
+  anchorAuditTrail: (role = "officer") =>
+    fetchAPI("/api/verification/anchor", { method: "POST" }, role),
+  getAnchorReceipt: () => fetchAPI("/api/verification/anchor"),
+  recordDecision: (
+    payload: {
+      bidder_id: string;
+      tender_id: string;
+      decision: string;
+      reason: string;
+      justification: string;
+      officer_name?: string;
+    },
+    role?: string
+  ) =>
+    fetchAPI(
+      "/api/verification/decision",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+      role
+    ),
+  getDecisions: (tenderId: string) =>
+    fetchAPI(`/api/verification/decisions/${tenderId}`),
   getScrutinyReport: (tenderId: string) =>
     fetchAPI(`/api/verification/report/${tenderId}`),
   queryCopilot: (query: string, tenderId?: string, bidderId?: string) =>
@@ -47,8 +94,8 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ query, tender_id: tenderId, bidder_id: bidderId }),
     }),
-  getShowCauseNotice: (bidderId: string) =>
-    fetchAPI(`/api/verification/show-cause/${bidderId}`),
+  getShowCauseNotice: (bidderId: string, role = "officer") =>
+    fetchAPI(`/api/verification/show-cause/${bidderId}`, undefined, role),
   getBidderDocuments: (bidderId: string) =>
     fetchAPI(`/api/verification/documents/${bidderId}`),
 
@@ -58,4 +105,5 @@ export const api = {
   getCollusionGraph: (tenderId: string) =>
     fetchAPI(`/api/graph/collusion/${tenderId}`),
 };
+
 

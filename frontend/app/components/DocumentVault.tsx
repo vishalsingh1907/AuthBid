@@ -83,6 +83,19 @@ export default function DocumentVault({ bidderId }: DocumentVaultProps) {
 
   return (
     <div className="space-y-4">
+      {/* Simulated Registry Notice Banner */}
+      <div className="flex items-center justify-between gap-3 bg-amber-50/70 border border-amber-200 p-3 rounded-xl text-xs text-amber-900">
+        <div className="flex items-center gap-2">
+          <AlertTriangle size={15} className="text-amber-700 flex-shrink-0" />
+          <span>
+            <strong className="font-bold">SIMULATED DEMO REGISTRY:</strong> Records displayed below are synthetically generated for demonstration. In production, these integrate live with GSTN, MCA21 V3, and CBDT via API Setu.
+          </span>
+        </div>
+        <span className="font-mono text-[10px] bg-amber-200/60 px-2 py-0.5 rounded font-bold uppercase">
+          Sandbox Mode
+        </span>
+      </div>
+
       {/* Header Info */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200">
         <div className="flex items-center gap-3">
@@ -94,7 +107,7 @@ export default function DocumentVault({ bidderId }: DocumentVaultProps) {
               Verified Digital Document Vault & OCR Pipeline
             </h4>
             <p className="text-xs text-slate-500">
-              Statutory documents cross-verified against official Indian registry APIs with SHA-256 hashes
+              Statutory documents cross-verified with SHA-256 cryptographic hashes and inline previews
             </p>
           </div>
         </div>
@@ -190,6 +203,17 @@ export default function DocumentVault({ bidderId }: DocumentVaultProps) {
                   </div>
                 </div>
 
+                {/* Checksum Badge */}
+                <div className="flex items-center justify-between pt-1 mb-2">
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <ShieldCheck size={11} className="text-emerald-600" />
+                    SHA-256 Verified
+                  </span>
+                  <span className="text-[11px] font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1">
+                    <Eye size={12} /> Preview
+                  </span>
+                </div>
+
                 {/* Extracted Fields Summary */}
                 <div className="bg-slate-50 rounded-lg p-2.5 text-xs font-mono space-y-1 border border-slate-100 mb-3">
                   {Object.entries(doc.extracted_data).map(([k, v]) => (
@@ -238,18 +262,21 @@ export default function DocumentVault({ bidderId }: DocumentVaultProps) {
       {/* Document Detailed Preview Modal */}
       {selectedDoc && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-xl overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center">
                   <FileText size={18} />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-slate-900">
-                    {selectedDoc.doc_name}
+                  <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <span>{selectedDoc.doc_name}</span>
+                    <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full text-[10px] font-bold">
+                      SHA-256 Sealed
+                    </span>
                   </h4>
                   <p className="text-xs text-slate-500 font-mono">
-                    ID: {selectedDoc.doc_id}
+                    ID: {selectedDoc.doc_id} • Source: {selectedDoc.verification_source}
                   </p>
                 </div>
               </div>
@@ -261,41 +288,85 @@ export default function DocumentVault({ bidderId }: DocumentVaultProps) {
               </button>
             </div>
 
-            <div className="p-6 space-y-4">
-              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs">
-                <div>
-                  <span className="text-slate-500 font-medium">Registry Source:</span>
-                  <p className="font-bold text-slate-800">{selectedDoc.verification_source}</p>
+            <div className="p-6 overflow-y-auto space-y-4">
+              {/* Realistic Government Certificate Sheet Preview */}
+              <div className="border-2 border-slate-300 rounded-xl p-5 bg-gradient-to-b from-slate-50/70 to-white relative overflow-hidden shadow-xs">
+                {/* Diagonal Demo Watermark */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-5">
+                  <span className="text-6xl font-black text-slate-900 -rotate-24 uppercase select-none">
+                    SIMULATED DEMO RECORD
+                  </span>
                 </div>
-                <div className="text-right">
-                  <span className="text-slate-500 font-medium">OCR Confidence:</span>
-                  <p className="font-mono font-bold text-emerald-700">{selectedDoc.ocr_match_score}%</p>
-                </div>
-              </div>
 
-              <div>
-                <h5 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-                  Extracted Regulatory Data
-                </h5>
-                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 divide-y divide-slate-100 text-xs font-mono">
-                  {Object.entries(selectedDoc.extracted_data).map(([k, v]) => (
-                    <div key={k} className="py-2 flex justify-between">
-                      <span className="text-slate-500">{k}:</span>
-                      <span className="font-bold text-slate-900">{String(v)}</span>
+                {/* Certificate Header */}
+                <div className="text-center border-b-2 border-slate-200 pb-4 mb-4">
+                  <div className="w-10 h-10 mx-auto rounded-full bg-slate-100 border border-slate-300 flex items-center justify-center mb-1 text-slate-700 font-black text-xs">
+                    GOI
+                  </div>
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-slate-800">
+                    Government of India • Statutory Regulatory Certificate
+                  </h3>
+                  <p className="text-[11px] font-semibold text-slate-500">
+                    Verified through National Single Sign-On / API Setu Registry Gateway
+                  </p>
+                </div>
+
+                {/* Certificate Body */}
+                <div className="grid grid-cols-2 gap-3 text-xs mb-4">
+                  <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                    <span className="text-slate-500 font-medium block text-[10px] uppercase">Certificate Type</span>
+                    <span className="font-bold text-slate-900">{selectedDoc.doc_name}</span>
+                  </div>
+                  <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                    <span className="text-slate-500 font-medium block text-[10px] uppercase">Issuing Registry</span>
+                    <span className="font-bold text-slate-900">{selectedDoc.verification_source}</span>
+                  </div>
+                </div>
+
+                {/* Extracted Structured Data Table */}
+                <div className="border border-slate-200 rounded-lg overflow-hidden text-xs mb-4">
+                  <div className="bg-slate-100 px-3 py-1.5 font-bold text-slate-700 text-[11px]">
+                    Extracted Statutory Declarations
+                  </div>
+                  <div className="divide-y divide-slate-100 font-mono">
+                    {Object.entries(selectedDoc.extracted_data).map(([k, v]) => (
+                      <div key={k} className="px-3 py-1.5 flex justify-between bg-white text-[11px]">
+                        <span className="text-slate-500 capitalize">{k.replace(/_/g, " ")}:</span>
+                        <span className="font-bold text-slate-900">{String(v)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Digital Signature & Seal Bar */}
+                <div className="flex items-center justify-between pt-3 border-t border-slate-200 text-[10px]">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 font-bold">
+                      ✓
                     </div>
-                  ))}
+                    <div>
+                      <span className="font-bold text-slate-800 block">Digitally Signed & Timestamped</span>
+                      <span className="text-slate-500 font-mono">OCR Match: {selectedDoc.ocr_match_score}%</span>
+                    </div>
+                  </div>
+                  <div className="text-right font-mono text-slate-500">
+                    <div>Status: {selectedDoc.status.toUpperCase()}</div>
+                    <div className="text-[9px] text-emerald-700 font-bold">CHECKSUM VERIFIED</div>
+                  </div>
                 </div>
               </div>
 
+              {/* SHA-256 Digest Box */}
               <div>
                 <h5 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
-                  Cryptographic SHA-256 Digest
+                  Cryptographic SHA-256 Checksum Digest
                 </h5>
                 <div className="p-3 bg-slate-900 text-slate-200 rounded-lg text-xs font-mono break-all flex items-center justify-between gap-3">
                   <span>{selectedDoc.sha256_hash}</span>
                   <button
                     onClick={() => copyHash(selectedDoc.sha256_hash)}
                     className="p-1.5 bg-slate-800 hover:bg-slate-700 rounded text-slate-300 hover:text-white transition flex-shrink-0"
+                    title="Copy full SHA-256 hash"
                   >
                     <Copy size={13} />
                   </button>
@@ -303,12 +374,15 @@ export default function DocumentVault({ bidderId }: DocumentVaultProps) {
               </div>
             </div>
 
-            <div className="px-6 py-3 border-t border-slate-200 bg-slate-50 flex justify-end">
+            <div className="px-6 py-3 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
+              <span className="text-[11px] text-slate-500">
+                🔒 Validated against official GeM compliance criteria
+              </span>
               <button
                 onClick={() => setSelectedDoc(null)}
                 className="px-4 py-1.5 text-xs font-bold text-slate-700 bg-white border border-slate-300 hover:bg-slate-100 rounded-lg transition"
               >
-                Close
+                Close Preview
               </button>
             </div>
           </div>

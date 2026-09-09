@@ -6,22 +6,49 @@ import {
   Scale,
   CheckCircle2,
   AlertTriangle,
-  XCircle,
-  AlertOctagon,
-  Building2,
-  TrendingUp,
-  Shield,
-  FileCheck
+  AlertOctagon
 } from "lucide-react";
+
+interface ComplianceCheckItem {
+  category?: string;
+  check_name?: string;
+  result?: string;
+  details?: string;
+}
+
+interface BidderItem {
+  bidder_id: string;
+  entity_name: string;
+  bid_amount: number;
+}
+
+interface VerificationResultItem {
+  bidder_id: string;
+  entity_name: string;
+  risk_score?: {
+    overall_score: number;
+    risk_level: string;
+    components?: {
+      cross_source_consistency?: number;
+      collusion_indicators?: number;
+      financial_health?: number;
+      document_integrity?: number;
+      blacklist_proximity?: number;
+    };
+  };
+  hard_eligibility?: Record<string, string>;
+  compliance_checks?: ComplianceCheckItem[];
+  anomalies?: Array<{ anomaly_id: string; title: string; severity: string }>;
+}
 
 interface BidderCompareModalProps {
   isOpen: boolean;
   onClose: () => void;
   selectedIds: string[];
   onToggleSelectId: (id: string) => void;
-  allBidders: any[];
-  allResults: any[];
-  onViewDossier: (result: any) => void;
+  allBidders: BidderItem[];
+  allResults: VerificationResultItem[];
+  onViewDossier: (result: VerificationResultItem) => void;
 }
 
 export default function BidderCompareModal({
