@@ -1,0 +1,349 @@
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════════════════
+   SIH26100 — BidVerify Enterprise Design System
+   Modern Institutional Procurement Intelligence Theme
+   Palette: Crisp White, Royal & Navy Blue, Emerald Green, Crimson Red
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Core Surfaces & Backgrounds */
+  --bg-canvas: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-subtle: #f1f5f9;
+  --bg-card: #ffffff;
+  --bg-hover: #f8fafc;
+
+  /* Borders */
+  --border-main: #e2e8f0;
+  --border-subtle: #edf2f7;
+  --border-strong: #cbd5e1;
+  --border-focus: #2563eb;
+
+  /* Typography */
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --text-subtle: #94a3b8;
+
+  /* Blue Authority & Brand Palette */
+  --brand-navy: #0f172a;
+  --brand-blue: #1d4ed8;
+  --brand-blue-accent: #2563eb;
+  --brand-blue-light: #eff6ff;
+  --brand-blue-border: #bfdbfe;
+  --brand-sky: #0284c7;
+
+  /* Green Compliance & Verification Palette */
+  --status-green: #059669;
+  --status-green-light: #ecfdf5;
+  --status-green-border: #a7f3d0;
+  --status-green-text: #065f46;
+
+  /* Red Collusion, Shell & Anomaly Palette */
+  --status-red: #dc2626;
+  --status-red-light: #fef2f2;
+  --status-red-border: #fecaca;
+  --status-red-text: #991b1b;
+
+  /* Amber Medium Risk & Caution Palette */
+  --status-amber: #d97706;
+  --status-amber-light: #fffbeb;
+  --status-amber-border: #fde68a;
+  --status-amber-text: #92400e;
+
+  /* Elevation Shadows */
+  --shadow-xs: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
+  --shadow-sm: 0 1px 3px 0 rgba(15, 23, 42, 0.06), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.07), 0 2px 4px -2px rgba(15, 23, 42, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.04);
+  --shadow-blue-glow: 0 8px 24px -4px rgba(37, 99, 235, 0.16);
+  --shadow-red-glow: 0 8px 24px -4px rgba(220, 38, 38, 0.16);
+}
+
+/* ── Base ── */
+body {
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Enterprise Cards ── */
+.gov-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-main);
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.gov-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1.5px);
+}
+
+.gov-card-static {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-main);
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.gov-card-interactive {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-main);
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.gov-card-interactive:hover {
+  border-color: var(--brand-blue-border);
+  background-color: #fafbfc;
+  box-shadow: var(--shadow-blue-glow);
+  transform: translateY(-2px);
+}
+
+/* ── Risk Badges (White, Blue, Green, Red) ── */
+.risk-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.risk-badge.risk-low {
+  background-color: var(--status-green-light);
+  color: var(--status-green-text);
+  border: 1px solid var(--status-green-border);
+}
+
+.risk-badge.risk-medium {
+  background-color: var(--status-amber-light);
+  color: var(--status-amber-text);
+  border: 1px solid var(--status-amber-border);
+}
+
+.risk-badge.risk-high {
+  background-color: var(--status-red-light);
+  color: var(--status-red-text);
+  border: 1px solid var(--status-red-border);
+}
+
+.risk-badge.risk-critical {
+  background-color: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #f87171;
+  animation: pulse-critical 2s infinite ease-in-out;
+}
+
+@keyframes pulse-critical {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.25); }
+  50% { box-shadow: 0 0 0 6px rgba(220, 38, 38, 0); }
+}
+
+/* ── Pill Tags ── */
+.gov-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.gov-pill-blue {
+  background-color: var(--brand-blue-light);
+  color: var(--brand-blue);
+  border: 1px solid var(--brand-blue-border);
+}
+
+.gov-pill-green {
+  background-color: var(--status-green-light);
+  color: var(--status-green);
+  border: 1px solid var(--status-green-border);
+}
+
+.gov-pill-red {
+  background-color: var(--status-red-light);
+  color: var(--status-red);
+  border: 1px solid var(--status-red-border);
+}
+
+/* ── Sidebar Navigation ── */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  color: var(--text-secondary);
+  font-size: 13.5px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.nav-item:hover {
+  background-color: var(--bg-subtle);
+  color: var(--text-primary);
+}
+
+.nav-item.active {
+  background-color: var(--brand-blue-light);
+  color: var(--brand-blue);
+  font-weight: 600;
+  border-color: var(--brand-blue-border);
+}
+
+/* ── Data Tables ── */
+.gov-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.gov-table thead th {
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  background-color: #f8fafc;
+  border-bottom: 1px solid var(--border-main);
+  border-top: 1px solid var(--border-main);
+}
+
+.gov-table thead th:first-child {
+  border-top-left-radius: 12px;
+}
+
+.gov-table thead th:last-child {
+  border-top-right-radius: 12px;
+}
+
+.gov-table tbody tr {
+  transition: background-color 0.15s ease;
+  cursor: pointer;
+}
+
+.gov-table tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+.gov-table tbody td {
+  padding: 14px 16px;
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.gov-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* ── Risk Circular Progress Gauge ── */
+.risk-gauge {
+  position: relative;
+  width: 110px;
+  height: 110px;
+}
+
+.risk-gauge svg {
+  transform: rotate(-90deg);
+}
+
+.risk-gauge-track {
+  fill: none;
+  stroke: #e2e8f0;
+  stroke-width: 9;
+}
+
+.risk-gauge-fill {
+  fill: none;
+  stroke-width: 9;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s ease-in-out;
+}
+
+.risk-gauge-value {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 26px;
+  font-weight: 800;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* ── Gradient Text ── */
+.brand-gradient-text {
+  background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #0284c7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Custom Scrollbar ── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ── Animations ── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes pulseDot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.6; }
+}
+
+.pulse-dot {
+  animation: pulseDot 2s infinite ease-in-out;
+}
+
+/* ── Print Styles for Scrutiny Memo ── */
+@media print {
+  aside, header, .no-print {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+    background: white !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+}
