@@ -15,6 +15,8 @@ _tenders_store: dict[str, dict] = {}
 _verification_results: dict[str, dict] = {}
 _audit_trail: list[dict] = []
 _pipeline_status: dict[str, dict] = {}
+_decisions_store: dict[str, list[dict]] = {}
+_anchor_receipts: list[dict] = []
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -176,4 +178,39 @@ def update_pipeline_status(tender_id: str, bidder_id: str, status: dict):
 def get_pipeline_status(tender_id: str, bidder_id: str) -> Optional[dict]:
     key = f"{tender_id}:{bidder_id}"
     return _pipeline_status.get(key)
+
+
+# ═══════════════════════════════════════════════════════════════
+# OFFICER DECISIONS & AUDIT LOG
+# ═══════════════════════════════════════════════════════════════
+def record_officer_decision(tender_id: str, decision_data: dict) -> dict:
+    """Record an officer's formal compliance determination with reason."""
+    if tender_id not in _decisions_store:
+        _decisions_store[tender_id] = []
+    _decisions_store[tender_id].append(decision_data)
+    return decision_data
+
+
+def get_officer_decisions(tender_id: str) -> list[dict]:
+    """Retrieve all recorded officer determinations for a tender."""
+    return _decisions_store.get(tender_id, [])
+
+
+# ═══════════════════════════════════════════════════════════════
+# EXTERNAL AUDIT ANCHORS
+# ═══════════════════════════════════════════════════════════════
+def record_anchor_receipt(receipt: dict) -> dict:
+    """Record an external cryptographic anchor receipt."""
+    _anchor_receipts.append(receipt)
+    return receipt
+
+
+def get_latest_anchor_receipt() -> Optional[dict]:
+    """Retrieve the latest external anchor receipt."""
+    return _anchor_receipts[-1] if _anchor_receipts else None
+
+
+def get_all_anchor_receipts() -> list[dict]:
+    """Retrieve all external anchor receipts."""
+    return list(_anchor_receipts)
 

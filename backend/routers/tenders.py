@@ -3,7 +3,6 @@ SIH26100 — Tenders Router
 CRUD operations for tender management.
 """
 from fastapi import APIRouter, HTTPException
-from models.schemas import TenderResponse, TenderChecklist, VerificationStatus
 from models.database import store_tender, get_tender, get_all_tenders, get_all_results_for_tender
 from mock_apis.synthetic_data import SAMPLE_TENDER, get_all_bidders
 

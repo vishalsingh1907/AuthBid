@@ -4,43 +4,45 @@ services:
   # ── PostgreSQL ──────────────────────────
   postgres:
     image: postgres:17-alpine
-    container_name: sih_postgres
+    container_name: sih_postgres_prod
     environment:
-      POSTGRES_USER: bidverify
-      POSTGRES_PASSWORD: bidverify_secret_2026
-      POSTGRES_DB: bid_compliance
+      POSTGRES_USER: ${POSTGRES_USER:-bidverify}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bidverify_secret_2026}
+      POSTGRES_DB: ${POSTGRES_DB:-bid_compliance}
     expose:
       - "5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata_prod:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U bidverify"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bidverify}"]
       interval: 5s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
   # ── Neo4j ───────────────────────────────
   neo4j:
     image: neo4j:5-community
-    container_name: sih_neo4j
+    container_name: sih_neo4j_prod
     environment:
-      NEO4J_AUTH: neo4j/neo4j_secret_2026
+      NEO4J_AUTH: ${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:-neo4j_secret_2026}
       NEO4J_PLUGINS: '["apoc"]'
     expose:
       - "7474"
       - "7687"
     volumes:
-      - neo4jdata:/data
+      - neo4jdata_prod:/data
     healthcheck:
       test: ["CMD", "neo4j", "status"]
       interval: 10s
       timeout: 10s
       retries: 5
+    restart: unless-stopped
 
   # ── Redis ───────────────────────────────
   redis:
     image: redis:7-alpine
-    container_name: sih_redis
+    container_name: sih_redis_prod
     expose:
       - "6379"
     healthcheck:
@@ -48,18 +50,22 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+    restart: unless-stopped
 
-  # ── FastAPI Backend ─────────────────────
+  # ── FastAPI Backend (Production: Multi-worker, No Reload) ──
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: sih_backend
+      target: production
+    container_name: sih_backend_prod
     ports:
       - "8000:8000"
     env_file:
       - .env
     environment:
+      ENVIRONMENT: production
+      STRICT_CONFIG_VALIDATION: "true"
       POSTGRES_HOST: postgres
       NEO4J_URI: bolt://neo4j:7687
       REDIS_URL: redis://redis:6379/0
@@ -70,28 +76,26 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    volumes:
-      - ./backend:/app
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4
+    restart: unless-stopped
 
-  # ── Next.js Frontend ───────────────────
+  # ── Next.js Frontend (Production: Compiled Build) ──
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: sih_frontend
+      target: production
+    container_name: sih_frontend_prod
     ports:
       - "3000:3000"
     environment:
+      NODE_ENV: production
       NEXT_PUBLIC_API_URL: http://backend:8000
       NEXT_PUBLIC_WS_URL: ws://backend:8000
     depends_on:
       - backend
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    command: npm run dev
+    restart: unless-stopped
 
 volumes:
-  pgdata:
-  neo4jdata:
+  pgdata_prod:
+  neo4jdata_prod:

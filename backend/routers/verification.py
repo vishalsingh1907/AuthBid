@@ -2,23 +2,48 @@
 SIH26100 — Verification Router
 Triggers the agentic verification pipeline and returns results.
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends, status
 from models.database import (
     store_verification_result,
-    get_verification_result,
     get_all_results_for_tender,
     append_audit_entry,
     get_audit_trail,
     verify_audit_chain,
     tamper_audit_entry,
     restore_audit_trail,
+    record_officer_decision,
+    get_officer_decisions,
+    record_anchor_receipt,
+    get_latest_anchor_receipt,
+    get_all_anchor_receipts,
 )
 from mock_apis.synthetic_data import get_bidder_by_id, get_all_bidders, get_tender as get_sample_tender, check_blacklist
+from models.auth import UserRole, require_roles
+from config import settings
 from datetime import datetime
 import hashlib
 import json
+import re
 
 router = APIRouter(prefix="/api/verification", tags=["Verification"])
+
+
+def _sanitize_bidder_input(text: str) -> str:
+    """
+    Sanitizes untrusted bidder text and query inputs to isolate from LLM prompt instructions.
+    Neutralizes injection attempts and markdown breakouts.
+    """
+    if not text:
+        return ""
+    # Filter common prompt injection instructions
+    filtered = re.sub(
+        r"(?i)(ignore\s+(all\s+)?previous\s+instructions|system\s+prompt|system:|developer:|\[INST\]|<\|im_start\|>)",
+        "[SUSPICIOUS_DIRECTIVE_REMOVED]",
+        text,
+    )
+    # Neutralize markdown code fences
+    filtered = filtered.replace("```", "'''")
+    return filtered.strip()[:1200]
 
 
 def _run_compliance_checks(bidder: dict, tender: dict) -> list[dict]:
@@ -496,8 +521,11 @@ async def get_audit_trail_endpoint():
 
 
 @router.post("/tamper")
-async def tamper_audit_endpoint(payload: dict = None):
-    """Simulate tampering with an audit trail entry for cryptographic verification demo."""
+async def tamper_audit_endpoint(
+    payload: dict = None,
+    current_role: UserRole = Depends(require_roles([UserRole.ADMIN])),
+):
+    """Simulate tampering with an audit trail entry. Restricted to System Admin role."""
     step_id = payload.get("step_id") if payload else None
     result = tamper_audit_entry(step_id)
     chain_valid = verify_audit_chain()
@@ -505,19 +533,135 @@ async def tamper_audit_endpoint(payload: dict = None):
         "success": True,
         "tamper_result": result,
         "chain_integrity": chain_valid,
+        "executed_by_role": current_role.value,
     }
 
 
 @router.post("/restore")
-async def restore_audit_endpoint():
-    """Restore cryptographic integrity and re-anchor SHA-256 chain."""
+async def restore_audit_endpoint(
+    current_role: UserRole = Depends(require_roles([UserRole.ADMIN])),
+):
+    """Restore cryptographic integrity and re-anchor SHA-256 chain. Restricted to System Admin role."""
     result = restore_audit_trail()
     chain_valid = verify_audit_chain()
     return {
         "success": True,
         "restore_result": result,
         "chain_integrity": chain_valid,
+        "restored_by_role": current_role.value,
     }
+
+
+@router.post("/anchor")
+async def anchor_audit_trail_endpoint(
+    current_role: UserRole = Depends(require_roles([UserRole.OFFICER, UserRole.ADMIN])),
+):
+    """
+    Externally anchor the latest SHA-256 hash-chain state to a simulated
+    public transparency log / RFC 3161 timestamp authority.
+    Prevents retroactive admin alterations by publishing the cryptographic commitment.
+    """
+    trail = get_audit_trail()
+    if not trail:
+        raise HTTPException(status_code=400, detail="Audit trail is empty. Run verification first.")
+
+    latest_hash = trail[-1]["current_hash"]
+    merkle_content = "|".join(e["current_hash"] for e in trail)
+    merkle_root = hashlib.sha256(merkle_content.encode()).hexdigest()
+
+    receipt = {
+        "receipt_id": f"ANCHOR-RFC3161-{int(datetime.now().timestamp())}",
+        "anchored_at": datetime.now().isoformat(),
+        "total_blocks": len(trail),
+        "latest_block_id": trail[-1]["step_id"],
+        "root_hash": latest_hash,
+        "merkle_root": merkle_root,
+        "external_service": settings.EXTERNAL_ANCHOR_SERVICE_URL,
+        "proof_type": "RFC-3161 Time-Stamp Protocol / Transparency Log Manifest",
+        "digital_signature": hashlib.sha256(f"SIG_GEM_VIG_{merkle_root}".encode()).hexdigest()[:48],
+        "status": "PUBLISHED_EXTERNAL",
+        "anchored_by_role": current_role.value,
+    }
+
+    record_anchor_receipt(receipt)
+    append_audit_entry(
+        "anchor_service",
+        "EXTERNAL_ANCHOR_PUBLISHED",
+        {"merkle_root": merkle_root, "blocks": len(trail)},
+        {"receipt_id": receipt["receipt_id"], "status": "PUBLISHED"},
+    )
+
+    return {"success": True, "data": receipt}
+
+
+@router.get("/anchor")
+async def get_anchor_receipt_endpoint():
+    """Get the latest external cryptographic anchor receipt."""
+    latest = get_latest_anchor_receipt()
+    all_receipts = get_all_anchor_receipts()
+    return {
+        "success": True,
+        "data": {
+            "latest_anchor": latest,
+            "total_anchors": len(all_receipts),
+            "history": all_receipts,
+        },
+    }
+
+
+@router.post("/decision")
+async def record_compliance_decision(
+    payload: dict,
+    current_role: UserRole = Depends(require_roles([UserRole.OFFICER, UserRole.ADMIN])),
+):
+    """
+    Record an official evaluation decision (disqualified, eligible, review) with mandatory reason.
+    Restricted to Officer and Admin roles under GFR Rule 151.
+    """
+    bidder_id = payload.get("bidder_id")
+    tender_id = payload.get("tender_id", "GEM/2026/B/4521897")
+    decision = payload.get("decision")
+    reason = payload.get("reason", "").strip()
+    justification = payload.get("justification", "").strip()
+    officer_name = payload.get("officer_name", "P. V. Ramanathan")
+
+    if not bidder_id or not decision:
+        raise HTTPException(status_code=400, detail="bidder_id and decision are required")
+
+    if decision == "disqualified" and (not reason or len(justification) < 5):
+        raise HTTPException(
+            status_code=400,
+            detail="Disqualification requires a mandatory categorical reason and detailed justification notes.",
+        )
+
+    decision_record = {
+        "decision_id": f"DEC-{bidder_id}-{int(datetime.now().timestamp())}",
+        "bidder_id": bidder_id,
+        "tender_id": tender_id,
+        "decision": decision,
+        "reason": reason,
+        "justification": justification,
+        "officer_name": officer_name,
+        "role": current_role.value,
+        "timestamp": datetime.now().isoformat(),
+    }
+
+    record_officer_decision(tender_id, decision_record)
+    append_audit_entry(
+        f"officer:{officer_name}",
+        f"DECISION_{decision.upper()}",
+        {"bidder_id": bidder_id, "reason": reason},
+        {"status": "recorded", "decision_id": decision_record["decision_id"]},
+    )
+
+    return {"success": True, "data": decision_record}
+
+
+@router.get("/decisions/{tender_id:path}")
+async def get_tender_decisions(tender_id: str):
+    """Get all recorded officer compliance decisions for a tender."""
+    decisions = get_officer_decisions(tender_id)
+    return {"success": True, "data": decisions}
 
 
 @router.get("/report/{tender_id:path}")
@@ -528,7 +672,6 @@ async def get_scrutiny_report(tender_id: str):
     trail = get_audit_trail()
     chain_valid = verify_audit_chain()
 
-    bidders = get_all_bidders()
     clean_bidders = [r for r in results if r.get("risk_score", {}).get("risk_level") == "low"]
     flagged_bidders = [r for r in results if r.get("risk_score", {}).get("risk_level") in ["high", "critical"]]
 
@@ -560,9 +703,24 @@ async def copilot_query(payload: dict):
     AI Vigilance & Legal Procurement Copilot.
     Answers technical, legal, and anti-collusion questions regarding the tender,
     specific bidders, and statutory provisions (Competition Act 2002, GFR 2017).
+    Applies strict prompt-injection sanitization to isolate untrusted bidder inputs.
     """
-    query = payload.get("query", "").strip().lower()
+    raw_query = payload.get("query", "")
+    query = _sanitize_bidder_input(raw_query).lower()
     tender_id = payload.get("tender_id", "GEM/2026/B/4521897")
+    bidder_id = payload.get("bidder_id")
+
+    # Construct isolated untrusted bidder document segment
+    untrusted_context = ""
+    if bidder_id:
+        bidder = get_bidder_by_id(bidder_id)
+        if bidder:
+            sanitized_name = _sanitize_bidder_input(bidder.get("entity_name", ""))
+            untrusted_context = (
+                f'<untrusted_bidder_context source="uploaded_dossier" bidder_id="{bidder_id}" sanitized="true">'
+                f'Entity: {sanitized_name}, PAN: {bidder.get("pan")}, GSTIN: {bidder.get("gstin")}'
+                f'</untrusted_bidder_context>'
+            )
 
     # Smart response generation based on procurement intelligence
     if "ring 1" in query or ("collusion" in query and ("techvision" in query or "b001" in query or "b003" in query or "b007" in query)):
@@ -578,7 +736,9 @@ async def copilot_query(payload: dict):
                     "Price Coordination: Bids are clustered tightly (₹2.20 Cr, ₹2.35 Cr, ₹2.48 Cr) around the ₹2.50 Cr estimate to manipulate L1 determination."
                 ],
                 "legal_statute": "Section 3(3)(d) of the Competition Act, 2002 (Bid Rigging or Collusive Bidding) & Rule 175 of General Financial Rules (GFR) 2017.",
-                "recommendation": "Disqualify all three bidders immediately. Forfeit EMD, initiate 2-year debarment proceedings under Rule 151 of GFR 2017, and refer dossier to the Competition Commission of India (CCI)."
+                "recommendation": "Disqualify all three bidders immediately. Forfeit EMD, initiate 2-year debarment proceedings under Rule 151 of GFR 2017, and refer dossier to the Competition Commission of India (CCI).",
+                "disclaimer": "AI-generated analysis — verify independently against statutory records before making legal determinations.",
+                "context_applied": untrusted_context,
             }
         }
     elif "ring 2" in query or ("b005" in query or "b009" in query or "nexus" in query or "cloudfirst" in query):
@@ -593,7 +753,9 @@ async def copilot_query(payload: dict):
                     "Cover Bidding Pattern: Bid amounts (₹2.39 Cr vs ₹2.32 Cr) are structured to protect CloudFirst while maintaining an illusion of market competition."
                 ],
                 "legal_statute": "GeM General Terms & Conditions Clause 4.14 (Prohibition of Related Party Bidding) & Section 3(3)(c) Competition Act 2002.",
-                "recommendation": "Issue Show-Cause notice seeking justification within 48 hours. If common control is confirmed, reject both bids and debar from future MeitY tenders."
+                "recommendation": "Issue Show-Cause notice seeking justification within 48 hours. If common control is confirmed, reject both bids and debar from future MeitY tenders.",
+                "disclaimer": "AI-generated analysis — verify independently against statutory records before making legal determinations.",
+                "context_applied": untrusted_context,
             }
         }
     elif "l1" in query or "lowest" in query or "winner" in query:
@@ -608,7 +770,9 @@ async def copilot_query(payload: dict):
                     "Lowest Fully Compliant Bidder: ByteWave Electronics (B011, ₹2.30 Cr) has minor GST gaps. If disqualified, Reliable Computing Systems (B002, ₹2.42 Cr) represents the cleanest compliant L1."
                 ],
                 "legal_statute": "GFR 2017 Rule 173(xxi) — Evaluation of Bids and Award of Contract.",
-                "recommendation": "Reject cover bids B007, B001, B003. Request MSE certificate renewal from B004. If clarified, award to B004 at ₹2.28 Cr (saving ₹22 Lakhs vs estimate)."
+                "recommendation": "Reject cover bids B007, B001, B003. Request MSE certificate renewal from B004. If clarified, award to B004 at ₹2.28 Cr (saving ₹22 Lakhs vs estimate).",
+                "disclaimer": "AI-generated analysis — verify independently against statutory records before making legal determinations.",
+                "context_applied": untrusted_context,
             }
         }
     elif "b007" in query or "shell" in query or "quantum" in query:
@@ -624,7 +788,9 @@ async def copilot_query(payload: dict):
                     "Director Nexus: Directorial overlap with B001 (TechVision) and B003 (DigiCore)."
                 ],
                 "legal_statute": "Prevention of Money Laundering Act (PMLA) Section 66 & GeM Seller Debarment Policy Section 3.",
-                "recommendation": "Immediate summary rejection and freeze on GeM seller account."
+                "recommendation": "Immediate summary rejection and freeze on GeM seller account.",
+                "disclaimer": "AI-generated analysis — verify independently against statutory records before making legal determinations.",
+                "context_applied": untrusted_context,
             }
         }
     else:
@@ -640,14 +806,22 @@ async def copilot_query(payload: dict):
                     "Audit Trail Status: Cryptographically sealed with SHA-256 hash chains"
                 ],
                 "legal_statute": "General Financial Rules (GFR) 2017 & Competition Act 2002.",
-                "recommendation": "Review the Bidder Intelligence Dossiers and Scrutiny Memo before proceeding to financial bid opening."
+                "recommendation": "Review the Bidder Intelligence Dossiers and Scrutiny Memo before proceeding to financial bid opening.",
+                "disclaimer": "AI-generated analysis — verify independently against statutory records before making legal determinations.",
+                "context_applied": untrusted_context,
             }
         }
 
 
 @router.get("/show-cause/{bidder_id}")
-async def generate_show_cause_notice(bidder_id: str):
-    """Generate formal Government of India Show-Cause Notice under GFR 2017 & Competition Act."""
+async def generate_show_cause_notice(
+    bidder_id: str,
+    current_role: UserRole = Depends(require_roles([UserRole.OFFICER, UserRole.ADMIN])),
+):
+    """
+    Generate formal Government of India Show-Cause Notice under GFR 2017 & Competition Act.
+    Restricted to Officer and Admin roles.
+    """
     bidder = get_bidder_by_id(bidder_id)
     if not bidder:
         raise HTTPException(status_code=404, detail=f"Bidder {bidder_id} not found")

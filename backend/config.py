@@ -4,7 +4,6 @@ Loads environment variables with sensible defaults for development.
 """
 from pydantic_settings import BaseSettings
 from typing import List
-import os
 
 
 class Settings(BaseSettings):
@@ -40,10 +39,15 @@ class Settings(BaseSettings):
     # ── Redis ──
     REDIS_URL: str = "redis://localhost:6379/0"
 
-    # ── Security ──
+    # ── Security & Environment ──
+    ENVIRONMENT: str = "development"
+    STRICT_CONFIG_VALIDATION: bool = False
     SECRET_KEY: str = "change-this-to-a-random-secret-key-in-production"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+
+    # ── External Anchoring ──
+    EXTERNAL_ANCHOR_SERVICE_URL: str = "https://transparency.gem.gov.in/rfc3161"
 
     # ── CORS ──
     BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000"]
@@ -52,6 +56,75 @@ class Settings(BaseSettings):
         env_file = ".env"
         env_file_encoding = "utf-8"
         extra = "ignore"
+
+
+INSECURE_SECRET_KEYS = {
+    "change-this-to-a-random-secret-key-in-production",
+    "secret",
+    "default",
+    "changeme",
+    "secret123",
+    "",
+}
+
+INSECURE_POSTGRES_PASSWORDS = {
+    "bidverify_secret_2026",
+    "password",
+    "postgres",
+    "admin",
+    "123456",
+}
+
+INSECURE_NEO4J_PASSWORDS = {
+    "neo4j_secret_2026",
+    "password",
+    "admin",
+    "123456",
+}
+
+
+def validate_startup_config(s: Settings) -> dict:
+    """
+    Validates application settings on startup.
+    Refuses to boot in production if SECRET_KEY or DB passwords match insecure defaults.
+    """
+    is_prod = s.ENVIRONMENT.lower() in ["production", "prod"] or s.STRICT_CONFIG_VALIDATION
+    violations = []
+
+    if s.SECRET_KEY in INSECURE_SECRET_KEYS or len(s.SECRET_KEY) < 32:
+        violations.append(
+            "SECRET_KEY matches insecure placeholder or is shorter than 32 characters."
+        )
+
+    if s.POSTGRES_PASSWORD in INSECURE_POSTGRES_PASSWORDS:
+        violations.append(
+            "POSTGRES_PASSWORD matches default placeholder 'bidverify_secret_2026'."
+        )
+
+    if s.NEO4J_PASSWORD in INSECURE_NEO4J_PASSWORDS:
+        violations.append(
+            "NEO4J_PASSWORD matches default placeholder 'neo4j_secret_2026'."
+        )
+
+    if is_prod and violations:
+        error_msg = (
+            "FATAL: Production startup configuration check failed. Refusing to boot with insecure defaults:\n"
+            + "\n".join(f" - {v}" for v in violations)
+        )
+        raise RuntimeError(error_msg)
+
+    if violations:
+        print("[SECURITY WARNING] Running with development default credentials.")
+        for v in violations:
+            print(f"  * {v}")
+        print("  These MUST be replaced with secure values before production deployment.")
+
+    return {
+        "status": "valid" if not violations else "insecure_dev_mode",
+        "environment": s.ENVIRONMENT,
+        "strict_mode": is_prod,
+        "warnings": violations,
+    }
 
 
 settings = Settings()

@@ -3,7 +3,7 @@ SIH26100 — Mock GST API
 Simulates the GST public search API with synthetic bidder data.
 """
 from fastapi import APIRouter, HTTPException
-from mock_apis.synthetic_data import get_bidder_by_gstin, get_all_bidders
+from mock_apis.synthetic_data import get_bidder_by_gstin
 
 router = APIRouter(prefix="/api/v1/gst", tags=["GST Verification"])
 

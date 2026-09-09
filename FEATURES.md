@@ -13,20 +13,63 @@
 
 ## 🏗️ System Architecture & Workflow
 
-```
-                               ┌────────────────────────────────┐
-                               │     GeM Tender RFP & Bids      │
-                               │    (e.g., GEM/2026/B/4521897)  │
-                               └───────────────┬────────────────┘
-                                               │
-               ┌───────────────────────────────┴───────────────────────────────┐
-               ▼                               ▼                               ▼
-  ┌─────────────────────────┐     ┌─────────────────────────┐     ┌─────────────────────────┐
-  │  Multi-Agent Scrutiny   │     │ Cross-Bidder Collusion  │     │ Cryptographic Defense   │
-  │  • MCA21, GSTN, PAN     │     │ • Entity Resolution     │     │ • SHA-256 Hash Chaining │
-  │  • Turnover & Exemption │     │ • Shared Bank/Directors │     │ • Tamper Verification  │
-  │  • Make-in-India Checks │     │ • Shell Co. Heuristics  │     │ • Show Cause Notices    │
-  └─────────────────────────┘     └─────────────────────────┘     └─────────────────────────┘
+```mermaid
+graph TD
+    subgraph INGESTION["Input Data Ingestion"]
+        Tender["GeM Tender RFP & Bids<br/>(GEM/2026/B/4521897)"]
+        BidderDocs["Bidder Documents<br/>(GST REG-06, PAN, Balance Sheets)"]
+    end
+
+    subgraph DETERMINISTIC["Deterministic & Rule-Based Engines (Non-LLM / Mathematically Verifiable)"]
+        direction TB
+        RegEngine["<b>1. Regulatory Rules Engine</b><br/>• GSTN active filing check<br/>• CBDT PAN exact name matching<br/>• MCA21 incorporation & DIN scan<br/>• MSME Udyam GFR 153 exemption<br/>• CPPP / GeM Debarment check"]
+        
+        EntityRes["<b>2. Entity Resolution & Graph Engine</b><br/>• Common director DIN matching<br/>• Physical address string unification<br/>• Bank IFSC + account prefix linkage<br/>• Shell company age & filing heuristic"]
+        
+        RiskEngine["<b>3. 5-Vector Weighted Risk Scoring</b><br/>• Cross-Source Consistency (30%)<br/>• Collusion Indicators (25%)<br/>• Financial Health (20%)<br/>• Document Integrity (15%)<br/>• Blacklist Proximity (10%)"]
+        
+        AuditChain["<b>4. Cryptographic Audit Defense</b><br/>• SHA-256 block-by-block hash chaining<br/>• Merkle root commitment<br/>• External RFC 3161 timestamp anchoring<br/>• Tamper detection & broken block pinpointing"]
+        
+        LegalTemplates["<b>5. Statutory Legal Engine</b><br/>• Show Cause Notice drafting (GFR 151 / Competition Act 3(3))<br/>• Committee Scrutiny Memo generation"]
+    end
+
+    subgraph GENERATIVE["Generative AI Component (LLM-Backed)"]
+        Copilot["<b>GeM Legal & Vigilance Copilot</b><br/>(Gemini 2.5 Flash)<br/>• Natural language bidder intelligence<br/>• Statutory cross-examination<br/>• <i>Protected by XML context isolation & input sanitization</i>"]
+    end
+
+    subgraph OUTPUTS["Outputs & Officer Actions"]
+        Dash["Procurement Officer Dashboard"]
+        CollusionGraph["Interactive Collusion Graph (2D)"]
+        SCN["Formal Show Cause Notice"]
+        DecisionLog["Immutable Decision Audit Log"]
+    end
+
+    Tender --> RegEngine
+    BidderDocs --> RegEngine
+    RegEngine --> EntityRes
+    EntityRes --> RiskEngine
+    RiskEngine --> AuditChain
+    RiskEngine --> LegalTemplates
+
+    AuditChain --> Dash
+    EntityRes --> CollusionGraph
+    LegalTemplates --> SCN
+    RiskEngine --> Dash
+    Dash --> DecisionLog
+
+    RiskEngine -. Sanitized Context .-> Copilot
+    Tender -. Sanitized Context .-> Copilot
+    Copilot --> Dash
+
+    classDef deterministic fill:#eff6ff,stroke:#2563eb,stroke-width:2px,color:#1e3a8a;
+    classDef generative fill:#fdf4ff,stroke:#c026d3,stroke-width:2px,stroke-dasharray: 5 5,color:#701a75;
+    classDef inputs fill:#f8fafc,stroke:#64748b,stroke-width:1px,color:#0f172a;
+    classDef outputs fill:#ecfdf5,stroke:#059669,stroke-width:2px,color:#064e3b;
+
+    class RegEngine,EntityRes,RiskEngine,AuditChain,LegalTemplates deterministic;
+    class Copilot generative;
+    class Tender,BidderDocs inputs;
+    class Dash,CollusionGraph,SCN,DecisionLog outputs;
 ```
 
 ---
@@ -47,13 +90,13 @@ Instead of procurement committees spending days manually examining certificates,
   * Cross-verifies declared financial turnovers against actual GST taxable filings and Income Tax Returns (ITR) to catch fabricated certificates.
 * **Agent 4: Composite Risk Scoring Engine**
   * Generates an explainable 0–100 risk score based on five weighted components:
-    1. **Cross-Source Consistency (25%)**
-    2. **Collusion Indicators (30%)**
-    3. **Financial Health & Turnover (15%)**
+    1. **Cross-Source Consistency (30%)**
+    2. **Collusion Indicators (25%)**
+    3. **Financial Health & Turnover (20%)**
     4. **Document Integrity & Checksums (15%)**
-    5. **Blacklist Proximity & History (15%)**
-* **Agent 5: SHA-256 Audit Anchoring**
-  * Hashes all input data, rule outputs, and verification determinations, chaining them cryptographically to prevent ex-post alterations.
+    5. **Blacklist Proximity & History (10%)**
+* **Agent 5: Cryptographic SHA-256 Audit Anchoring**
+  * Hashes all input data, rule outputs, and verification determinations, chaining them cryptographically and anchoring to an external RFC 3161 timestamp log to prevent ex-post alterations.
 
 ---
 

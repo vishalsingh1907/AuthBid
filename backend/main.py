@@ -8,17 +8,29 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from config import settings
+from config import settings, validate_startup_config
 from models.database import store_tender
 from mock_apis.synthetic_data import SAMPLE_TENDER
+
+# ── Routers ──
+from routers.tenders import router as tenders_router
+from routers.bidders import router as bidders_router
+from routers.verification import router as verification_router
+from routers.graph import router as graph_router
+from mock_apis.gst_api import router as gst_router
+from mock_apis.pan_api import router as pan_router
+from mock_apis.udyam_api import router as udyam_router
+from mock_apis.mca_api import router as mca_router
+from mock_apis.blacklist_api import router as blacklist_router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Seed sample data on startup."""
+    """Validate configuration and seed sample data on startup."""
+    validate_startup_config(settings)
     store_tender(SAMPLE_TENDER)
     print("[OK] Sample tender seeded")
-    print(f"[READY] {settings.APP_NAME} v{settings.APP_VERSION} is ready")
+    print(f"[READY] {settings.APP_NAME} v{settings.APP_VERSION} is ready (env={settings.ENVIRONMENT})")
     yield
     print("[SHUTDOWN] Shutting down...")
 
@@ -44,16 +56,6 @@ app.add_middleware(
 )
 
 # ── Register Routers ──
-from routers.tenders import router as tenders_router
-from routers.bidders import router as bidders_router
-from routers.verification import router as verification_router
-from routers.graph import router as graph_router
-from mock_apis.gst_api import router as gst_router
-from mock_apis.pan_api import router as pan_router
-from mock_apis.udyam_api import router as udyam_router
-from mock_apis.mca_api import router as mca_router
-from mock_apis.blacklist_api import router as blacklist_router
-
 app.include_router(tenders_router)
 app.include_router(bidders_router)
 app.include_router(verification_router)
